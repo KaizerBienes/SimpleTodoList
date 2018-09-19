@@ -9,10 +9,13 @@ def index():
     return render_template('index.html', route_page="Routes")
 
 sys.path.insert(0, "app/routes/")
+sys.path.insert(1, "app/routes/handlers/")
+
 from accounts import accounts
 from tasks import tasks
 from todos import todos
 from tags import tags
+
 
 app.register_blueprint(accounts, url_prefix='/accounts')
 app.register_blueprint(tasks, url_prefix='/tasks')

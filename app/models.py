@@ -5,7 +5,7 @@ class UserCredential(db.Model):
     __tablename__ = 'user_credential'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(255), index=True, unique=True, nullable=False)
-    password = db.Column(db.String(64), nullable=False)
+    password = db.Column(db.String(120), nullable=False)
     updated_date = db.Column(db.DateTime, nullable=False, server_default=func.now(), server_onupdate=func.now())
     created_date = db.Column(db.DateTime, nullable=False, server_default=func.now())
     task = db.relationship('Task', backref='task_user_credential', lazy='dynamic')

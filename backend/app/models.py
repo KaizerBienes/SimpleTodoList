@@ -15,7 +15,7 @@ class UserCredential(db.Model):
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user_credential.id', onupdate='CASCADE', ondelete='CASCADE'), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user_credential.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(255))
     updated_date = db.Column(db.DateTime, nullable=False, server_default=func.now(), server_onupdate=func.now())
@@ -27,7 +27,7 @@ class Task(db.Model):
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    task_id = db.Column(db.Integer, db.ForeignKey('task.id', onupdate='CASCADE', ondelete='CASCADE'), unique=True, nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
     description = db.Column(db.String(255), nullable=False)
     due_date = db.Column(db.DateTime)
     updated_date = db.Column(db.DateTime, nullable=False, server_default=func.now(), server_onupdate=func.now())

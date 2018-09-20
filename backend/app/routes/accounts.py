@@ -10,7 +10,7 @@ import ResponseHandler
 registration = Registration()
 authentication = Authentication()
 
-@accounts.route('register/', methods=['POST'])
+@accounts.route('/register/', methods=['POST'])
 def register():
     post_content = request.json
     http_code = registration.register_user(post_content) 
@@ -21,7 +21,7 @@ def register():
         }
     ))
 
-@accounts.route('login/', methods=['POST'])
+@accounts.route('/login/', methods=['POST'])
 def login():
     post_content = request.json
     response = authentication.login(post_content)

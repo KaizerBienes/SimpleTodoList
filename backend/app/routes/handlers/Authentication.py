@@ -2,6 +2,7 @@ from app import db
 from app.models import UserCredential
 from werkzeug.security import check_password_hash
 from flask_api import status
+import logging
 import os
 import jwt
 import datetime
@@ -46,3 +47,4 @@ class Authentication:
             return True
         else:
             return False
+

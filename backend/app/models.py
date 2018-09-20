@@ -1,5 +1,5 @@
 from app import db
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, expression
 
 class UserCredential(db.Model):
     __tablename__ = 'user_credential'
@@ -20,6 +20,7 @@ class Task(db.Model):
     description = db.Column(db.String(255))
     updated_date = db.Column(db.DateTime, nullable=False, server_default=func.now(), server_onupdate=func.now())
     created_date = db.Column(db.DateTime, nullable=False, server_default=func.now())
+    order_by_flag = db.Column(db.Boolean, nullable=False, server_default=expression.false())
     todo = db.relationship('Todo', backref='todo_task', lazy='dynamic')
 
     def __repr__(self):

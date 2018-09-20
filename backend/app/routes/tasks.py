@@ -5,22 +5,30 @@ from TaskHandler import TaskHandler
 from TodoHandler import TodoHandler
 import ResponseHandler
 import DecodeToken
-import re
-import logging
+from flask_api import status
 
 tasks = Blueprint('tasks', __name__, template_folder='templates')
 
 task_handler = TaskHandler()
 todo_handler = TodoHandler()
 
-@tasks.route('/', methods=['POST'])
+@tasks.route('/', methods=['GET','POST'])
 def new_task():
-    post_content = request.json
     user_id = DecodeToken.get_user_id(request.headers)
     if user_id is not None:
-        response_http_code = task_handler.create(user_id, post_content.get("data"))
+        if request.method == 'POST':
+            post_content = request.json
+            response_http_code = task_handler.create(user_id, post_content.get("data"))
+        elif request.method == 'GET':
+            response = task_handler.get_all_tasks_and_todos(user_id)
+            return jsonify(ResponseHandler.construct_json_response(
+                {
+                    "http_code": response.get("http_code"),
+                    "data": response.get("data")
+                }
+            ))
     else:
-        response_http_code = 403
+        response_http_code = status.HTTP_403_FORBIDDEN
 
     return jsonify(ResponseHandler.construct_json_response(
         {
@@ -31,15 +39,15 @@ def new_task():
 
 @tasks.route('<task_id>/', methods=['PUT', 'DELETE'])
 def edit_or_delete_task(task_id):
-    post_content = request.json
     user_id = DecodeToken.get_user_id(request.headers)
     if user_id is not None:
+        post_content = request.json
         if request.method == 'PUT':
             response_http_code = task_handler.edit(user_id, task_id, post_content.get("data"))
         elif request.method == 'DELETE':
             response_http_code = task_handler.delete(user_id, task_id)
     else:
-        response_http_code = 403
+        response_http_code = status.HTTP_403_FORBIDDEN
 
     return jsonify(ResponseHandler.construct_json_response(
         {
@@ -48,14 +56,23 @@ def edit_or_delete_task(task_id):
         }
     ))
 
-@tasks.route('/<task_id>/todos/', methods=['POST'])
+@tasks.route('/<task_id>/todos/', methods=['GET', 'POST'])
 def new_todo(task_id):
-    post_content = request.json
     user_id = DecodeToken.get_user_id(request.headers)
     if user_id is not None:
-        response_http_code = todo_handler.create(user_id, task_id, post_content.get("data"))
+        if request.method == 'POST':
+            post_content = request.json
+            response_http_code = todo_handler.create(user_id, task_id, post_content.get("data"))
+        elif request.method == 'GET':
+            response = todo_handler.get_all_todos(user_id, task_id)
+            return jsonify(ResponseHandler.construct_json_response(
+                {
+                    "http_code": response.get("http_code"),
+                    "data": response.get("data")
+                }
+            ))
     else:
-        response_http_code = 403
+        response_http_code = status.HTTP_403_FORBIDDEN
 
     return jsonify(ResponseHandler.construct_json_response(
         {
@@ -66,9 +83,9 @@ def new_todo(task_id):
 
 @tasks.route('<task_id>/todos/<todo_id>/', methods=['PUT', 'DELETE'])
 def edit_or_delete_todo(task_id, todo_id):
-    post_content = request.json
     user_id = DecodeToken.get_user_id(request.headers)
     if user_id is not None:
+        post_content = request.json
         if request.method == 'PUT':
             response_http_code = todo_handler.edit({
                 "user_id": user_id,
@@ -82,7 +99,22 @@ def edit_or_delete_todo(task_id, todo_id):
                 "todo_id": todo_id
             })
     else:
-        response_http_code = 403
+        response_http_code = status.HTTP_403_FORBIDDEN
+
+    return jsonify(ResponseHandler.construct_json_response(
+        {
+            "http_code": response_http_code,
+            "http_code_only": True
+        }
+    ))
+
+@tasks.route('<task_id>/order-flag/<order_flag>/', methods=['PATCH'])
+def toggle_order_flag(task_id, order_flag):
+    user_id = DecodeToken.get_user_id(request.headers)
+    if user_id is not None:
+        response_http_code = task_handler.toggle_order_flag(user_id, task_id, order_flag)
+    else:
+        response_http_code = status.HTTP_403_FORBIDDEN
 
     return jsonify(ResponseHandler.construct_json_response(
         {

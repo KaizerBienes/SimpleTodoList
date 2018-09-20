@@ -3,8 +3,9 @@ from sqlalchemy import and_
 from flask_api import status
 from app.models import Task
 import os
-import datetime
+from datetime import datetime
 import logging
+from TodoHandler import TodoHandler
 
 class TaskHandler:
     def create(self, user_id, task_form):
@@ -21,7 +22,7 @@ class TaskHandler:
         )
 
         db.session.add(task)
-        return self.commit_task()
+        return self.commit_task("create")
 
 
     def edit(self, user_id, task_id, task_form):
@@ -36,7 +37,7 @@ class TaskHandler:
         if task:
             setattr(task, 'title', task_form.get('title'))
             setattr(task, 'description', task_form.get('description'))
-            return self.commit_task()
+            return self.commit_task("edit")
         else:
             logging.warn("Cant delete task. Perhaps there is no task")
             return status.HTTP_404_NOT_FOUND
@@ -51,7 +52,7 @@ class TaskHandler:
         task = self.get_task_record(user_id, task_id)
         if task:
             db.session.delete(task);
-            return self.commit_task()
+            return self.commit_task("delete")
         else:
             logging.warn("Cant delete task. Perhaps there is no task")
             return status.HTTP_404_NOT_FOUND
@@ -59,12 +60,48 @@ class TaskHandler:
     def get_task_record(self, user_id, task_id):
         return Task.query.filter(and_(Task.user_id == user_id, Task.id == task_id)).first()
 
-    def commit_task(self):
+    def commit_task(self, operation):
         try:
             db.session.commit()
-            return status.HTTP_202_ACCEPTED
+            if operation == "create":
+                return status.HTTP_201_CREATED
+            else:
+                return status.HTTP_202_ACCEPTED
         except Exception as e:
             logging.warn(e)
             db.session.rollback()
             db.session.flush()
             return status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    def get_all_tasks_and_todos(self, user_id):
+        todo_handler = TodoHandler()
+        tasks = Task.query.filter(Task.user_id == user_id).all()
+        task_list = []
+        for task in tasks:
+            task_object = {
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "updated_date": task.updated_date.strftime('%Y-%m-%d %H:%M %p'),
+                "todos": todo_handler.get_all_todos(user_id, task.id).get("data", [])
+            }
+            task_list.append(task_object)
+
+        return {
+            "http_code": status.HTTP_202_ACCEPTED,
+            "data": task_list
+        }
+
+    def toggle_order_flag(self, user_id, task_id, order_by_flag):
+        task = self.get_task_record(user_id, task_id)
+        if task:
+            if order_by_flag == '0':
+                setattr(task, 'order_by_flag', 0)
+            elif order_by_flag == '1':
+                setattr(task, 'order_by_flag', 1)
+
+            return self.commit_task("edit")
+        else:
+            logging.warn("Cant delete task. Perhaps there is no task")
+            return status.HTTP_404_NOT_FOUND
+

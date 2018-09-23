@@ -9,12 +9,12 @@ import datetime
 
 class Authentication:
     def login(self, login_form):
-        login_details = login_form.get('credentials')
-        user_found = UserCredential.query.filter_by(username=login_details.get('username')).first()
+        login_details = login_form.get('credentials', None)
+        user_found = UserCredential.query.filter_by(username=login_details.get('username', None)).first()
         if not self.is_username_existing(user_found):
             return self.construct_authentication_dict(status.HTTP_404_NOT_FOUND, {})
         else:
-            if self.is_password_valid(user_found, login_details.get('password')):
+            if self.is_password_valid(user_found, login_details.get('password', None)):
                 return self.construct_authentication_dict(status.HTTP_202_ACCEPTED, {
                     "token":  jwt.encode(self.construct_jwt(user_found.id),\
                         os.environ.get('SECRET_CODE'), algorithm='HS256')     

@@ -3,6 +3,7 @@ from flask_api import status
 from app.models import Todo, TodoTag, Tag
 from TagsHandler import TagsHandler
 from heapq import nlargest
+import logging
 
 class TodoTagsHandler:
     def add(self, user_id, todo_id, tags):
@@ -12,16 +13,45 @@ class TodoTagsHandler:
             for tag_name in tags:
                 self.create_todo_tag(user_id, todo_id, tag_name)
 
+    def add_single_tag(self, user_id, todo_id, tag_name):
+        if user_id is None:
+            return status.HTTP_403_FORBIDDEN
+        else:
+            createdTodoTag = self.create_todo_tag(user_id, todo_id, tag_name)
+            if createdTodoTag:
+                self.commit_todo_tag("create")
+            else: 
+                return False
+
     def create_todo_tag(self, user_id_from_form, todo_id_from_form, tag_name):
         tags_handler = TagsHandler()
         self.create_tag_if_not_exists(user_id_from_form, tags_handler, tag_name)
-        todo_tag = TodoTag(
-            todo_id=todo_id_from_form,
-            tag_id=tags_handler.get_tag_record(tag_name).id
-        )
+        if not self.check_if_tag_exists_for_todo(todo_id_from_form, tag_name):
+            todo_tag = TodoTag(
+                todo_id=todo_id_from_form,
+                tag_id=tags_handler.get_tag_record(tag_name).id
+            )
 
-        db.session.add(todo_tag)
+            db.session.add(todo_tag)
+            return True
+        else:
+            return False
 
+
+    def check_if_tag_exists_for_todo(self, todo_id, tag_name):
+        todo_tag_join = (db.session.query(Todo, TodoTag, Tag)
+            .filter(Todo.id == todo_id)
+            .filter(Todo.id == TodoTag.todo_id)
+            .filter(TodoTag.tag_id == Tag.id)
+            .filter(Tag.name == tag_name)
+            .first())
+
+        if todo_tag_join:
+            logging.warn("tag exists")
+            return True
+        else:
+            logging.warn("tag doesn't exist")
+            return False
 
     def create_tag_if_not_exists(self, user_id, tags_handler, tag):
         tag_record = tags_handler.get_tag_record(tag)
@@ -73,3 +103,4 @@ class TodoTagsHandler:
             db.session.rollback()
             db.session.flush()
             return status.HTTP_500_INTERNAL_SERVER_ERROR
+

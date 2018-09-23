@@ -1,7 +1,7 @@
 from app import db
 from sqlalchemy import and_
 from flask_api import status
-from app.models import Task
+from app.models import Task, Todo
 import os
 from datetime import datetime
 import logging
@@ -51,7 +51,10 @@ class TaskHandler:
     def delete_task(self, user_id, task_id):
         task = self.get_task_record(user_id, task_id)
         if task:
-            db.session.delete(task);
+            todos = Todo.query.filter(and_(Todo.task_id == task_id)).all()
+	    for todo in todos:
+		db.session.delete(todo)
+            db.session.delete(task)
             return self.commit_task("delete")
         else:
             logging.warn("Cant delete task. Perhaps there is no task")
@@ -82,7 +85,7 @@ class TaskHandler:
                 "id": task.id,
                 "title": task.title,
                 "description": task.description,
-                "updated_date": task.updated_date.strftime('%Y-%m-%d %H:%M %p'),
+                "updated_date": task.updated_date.strftime('%Y-%m-%d %H:%M'),
                 "todos": todo_handler.get_all_todos(user_id, task.id).get("data", [])
             }
             task_list.append(task_object)

@@ -1,7 +1,8 @@
 from app import db
 from sqlalchemy import and_
+from sqlalchemy.sql import expression
 from flask_api import status
-from app.models import Task, Todo
+from app.models import Task, Todo, Tag, TodoTag
 import os
 from datetime import datetime
 from TodoTagsHandler import TodoTagsHandler
@@ -26,13 +27,13 @@ class TodoHandler:
                 todo = Todo(
                     task_id=task.id, \
                     description=todo_form_details.get("description", ""), \
-                    due_date= todo_due_date\
+                    due_date= todo_due_date \
                 )
 
                 db.session.add(todo)
                 db.session.flush()
                 self.add_todo_tags(user_id, todo.id, todo_form_details.get("tags", []))
-                return self.commit_todo("create")
+                return self.commit_todo("create", { "id": todo.id })
 
     def add_todo_tags(self, user_id, todo_id, tags):
         todo_tags_handler = TodoTagsHandler()
@@ -47,17 +48,24 @@ class TodoHandler:
     def format_date(self, date):
         if date:
             try:
-                return datetime.strptime(date, '%Y-%m-%d %H:%M %p')
+                return datetime.strptime(date, '%Y-%m-%d %H:%M')
             except ValueError:
-                return status.HTTP_406_NOT_ACCEPTABLE
+                if (not date):
+                    return None
+                else:
+                    logging.warn(date + 'end')
+                    return status.HTTP_406_NOT_ACCEPTABLE
         else:
             return None
 
-    def commit_todo(self, operation):
+    def commit_todo(self, operation, content={}):
         try:
             db.session.commit()
             if operation == "create":
-                return status.HTTP_201_CREATED
+                return {
+                    "http_code": status.HTTP_201_CREATED,
+                    "data": content
+                }
             else:
                 return status.HTTP_202_ACCEPTED
         except Exception as e:
@@ -107,6 +115,8 @@ class TodoHandler:
     def delete_todo(self, ids):
         todo = self.get_todo_record(ids)
         if todo:
+            todo_tag_handler = TodoTagsHandler()
+            todo_tag_handler.delete_all_tags_of_todo_id(ids.get("todo_id"))
             db.session.delete(todo);
             return self.commit_todo("delete")
         else:
@@ -127,8 +137,10 @@ class TodoHandler:
                 todo_object = {
                     "id": todo.id,
                     "description": todo.description,
-                    "due_date": todo.due_date.strftime('%Y-%m-%d %H:%M %p'),
-                    "updated_date": todo.updated_date.strftime('%Y-%m-%d %H:%M %p'),
+                    "due_date": todo.due_date.strftime('%Y-%m-%d %H:%M') \
+                            if (todo.due_date is not None) else "",
+                    "updated_date": todo.updated_date.strftime('%Y-%m-%d %H:%M'),
+                    "done_flag": todo.done_flag,
                     "tags": todo_tags_handler.get_all_tags_from_todo_id(todo.id)
                 }
                 todo_list.append(todo_object)
@@ -137,3 +149,39 @@ class TodoHandler:
                 "http_code": status.HTTP_202_ACCEPTED,
                 "data": todo_list
             }
+
+    def toggle_done(self, user_id, todo_id):
+        if user_id is None or todo_id is None:
+            return status.HTTP_403_FORBIDDEN
+        else:
+            todo = Todo.query.filter(Todo.id == todo_id).first()
+            done_flag_toggled = expression.false() \
+                if (todo.done_flag == True) \
+                else expression.true()
+            setattr(todo, 'done_flag', done_flag_toggled)
+
+        return self.commit_todo("edit")
+
+    def edit_specific_tag(self, ids, todo_tags_handler, tag):
+        if ids.get("user_id") is None:
+            return status.HTTP_403_FORBIDDEN
+        else:
+            return self.edit_tag(ids, todo_tags_handler, tag)
+
+    def edit_tag(self, ids, todo_tags_handler, tag):
+        task = self.get_task_record(user_id=ids.get("user_id"), task_id=ids.get("task_id"))
+
+        todo_tag_join = db.session.query(Todo, TodoTag, Tag)\
+        .filter(Todo.id == ids.get("todo_id"))\
+        .filter(TodoTag.todo_id == Todo.id)\
+        .filter(Tag.id == TodoTag.tag_id)\
+        .filter(Tag.name == tag.get("old_tag"))\
+        .first()
+        
+        logging.warn(todo_tag_join.TodoTag.id)
+        todo_tags_handler.delete_todo_tag(todo_tag_join.TodoTag.id)
+        created_todo_tag = todo_tags_handler.add_single_tag(ids.get("user_id"), ids.get("todo_id"), tag.get("new_tag"))
+        if created_todo_tag:
+            return status.HTTP_204_NO_CONTENT
+        else:
+            return status.HTTP_202_ACCEPTED

@@ -60,7 +60,6 @@ class TagsHandler:
         tag_counter = {}
         for todo_tag_record in top_tags:
             tag_name = todo_tag_record.Tag.name
-            logging.warn(tag_name)
             if not tag_name in tag_counter:
                 tag_counter[tag_name] = 1
             else:

@@ -1,17 +1,17 @@
 from flask_api import status
-from flask import request, jsonify
-import re
+from flask import request, Response
+import json
 
 def construct_json_response(response):
     if response.get("http_code_only"):
-        return {
+        return Response(json.dumps({
             "message": construct_http_code_message(response.get("http_code"))
-        }
+        }), status=int(response.get("http_code")), mimetype="application/json")
     else:
-        return {
+        return Response(json.dumps({
             "message": construct_http_code_message(response.get("http_code")),
             "data": response.get("data")
-        }
+        }), status=int(response.get("http_code")), mimetype="application/json")
 
 
 def construct_http_code_message(http_code):

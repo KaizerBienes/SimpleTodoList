@@ -3,11 +3,6 @@ from flask import Blueprint
 from flask import render_template
 import sys
 
-@app.route('/')
-@app.route('/index')
-def index():
-    return render_template('index.html', route_page="Routes")
-
 sys.path.insert(0, "app/routes/")
 sys.path.insert(1, "app/routes/handlers/")
 
@@ -17,7 +12,12 @@ from todos import todos
 from tags import tags
 
 
-app.register_blueprint(accounts, url_prefix='/accounts')
-app.register_blueprint(tasks, url_prefix='/tasks')
-app.register_blueprint(todos, url_prefix='/todos')
-app.register_blueprint(tags, url_prefix='/tags')
+app.register_blueprint(accounts, url_prefix='/api/accounts')
+app.register_blueprint(tasks, url_prefix='/api/tasks')
+app.register_blueprint(todos, url_prefix='/api/todos')
+app.register_blueprint(tags, url_prefix='/api/tags')
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    return render_template("index.html")

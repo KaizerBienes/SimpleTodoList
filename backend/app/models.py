@@ -31,6 +31,7 @@ class Todo(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
     description = db.Column(db.String(255), nullable=False)
     due_date = db.Column(db.DateTime)
+    done_flag = db.Column(db.Boolean, nullable=False, server_default=expression.false())
     updated_date = db.Column(db.DateTime, nullable=False, server_default=func.now(), server_onupdate=func.now())
     created_date = db.Column(db.DateTime, nullable=False, server_default=func.now())
     todo_tag = db.relationship('TodoTag', backref='todo_tag_todo', lazy='dynamic')

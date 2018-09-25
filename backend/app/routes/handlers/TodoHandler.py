@@ -134,6 +134,13 @@ class TodoHandler:
             todo_list = []
             for todo in todos:
                 todo_tags_handler = TodoTagsHandler()
+                if todo.due_date is not None \
+                        and int(todo.due_date.strftime('%Y')) < 1900:
+                    return {
+                        "http_code": status.HTTP_404_NOT_FOUND,
+                        "data": todo_list
+                    }
+
                 todo_object = {
                     "id": todo.id,
                     "description": todo.description,
@@ -185,3 +192,24 @@ class TodoHandler:
             return status.HTTP_204_NO_CONTENT
         else:
             return status.HTTP_202_ACCEPTED
+
+    def delete_specific_tag(self, ids, todo_tags_handler, tag):
+        if ids.get("user_id") is None:
+            return status.HTTP_403_FORBIDDEN
+        else:
+            return self.delete_tag(ids, todo_tags_handler, tag)
+
+    def delete_tag(self, ids, todo_tags_handler, tag_name):
+        task = self.get_task_record(user_id=ids.get("user_id"), task_id=ids.get("task_id"))
+
+        todo_tag_join = db.session.query(Todo, TodoTag, Tag)\
+        .filter(Todo.id == ids.get("todo_id"))\
+        .filter(TodoTag.todo_id == Todo.id)\
+        .filter(Tag.id == TodoTag.tag_id)\
+        .filter(Tag.name == tag_name)\
+        .first()
+        
+        logging.warn(tag_name)
+        logging.warn(todo_tag_join.TodoTag.id)
+        todo_tags_handler.delete_todo_tag(todo_tag_join.TodoTag.id)
+        return status.HTTP_202_ACCEPTED

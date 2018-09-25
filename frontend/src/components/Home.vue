@@ -1,29 +1,44 @@
 <template>
   <div>
-    <div>
-      <p>Home page</p>
+    <div class="login-page">
+      <h1>Your Personal Todo List</h1>
       <form class="login-user" @submit.prevent="loginUser">
-        <label>
-          Username:
-          <input type="text" v-model="user.username" />
-        </label>
-        <label>
-          Password:
-          <input type="text" v-model="user.password" />
-        </label>
-        <button type="submit">Submit</button>
+        <div class="login-label">
+          <span> Username: </span>
+          <input class="login-username" type="text" v-model="user.username" />
+        </div>
+        <div class="login-label">
+          <span> Password: </span>
+          <input class="login-password" type="password" v-model="user.password" />
+        </div>
+        <input class="login-submit" type="submit" value="Log In"/>
       </form>
-    </div>
-    <div>
       <h3>{{ errorMessage }}</h3>
+      <form class="register-user" @submit="registerUser">
+        <div class="login-label">
+          <span class="register-label"> Username: </span>
+          <input id="register-username" type="text"/>
+        </div>
+        <div class="login-label">
+          <span class="register-label"> Password: </span>
+          <input id="register-password" type="password"/>
+        </div>
+        <div class="login-label">
+          <span class="register-label"> Repeat Password: </span>
+          <input id="register-repeat-password" type="password"/>
+        </div>
+        <input class="login-register" type="submit" value="Register" />
+      </form>
+      <h2 id="register-error-message"></h2>
     </div>
-    <about></about>
   </div>
 </template>
+<style lang="scss">
+@import "../assets/scss/_dashboard.scss";
+</style>
 
 <script>
 import axios from 'axios'
-import About from './About.vue'
 export default {
   data () {
     return {
@@ -33,9 +48,6 @@ export default {
       },
       errorMessage: ''
     }
-  },
-  components: {
-    About
   },
   methods: {
     loginUser () {
@@ -54,6 +66,27 @@ export default {
           console.log(error.response)
           this.errorMessage = error.response.data.message.description
         })
+    },
+    registerUser () {
+      var registerPassword = document.getElementById('register-password').value
+      var registerPasswordRepeat = document.getElementById('register-repeat-password').value
+      if (registerPassword === registerPasswordRepeat) {
+        axios.post(this.$hostname + 'accounts/register/', {
+          credentials: {
+            username: document.getElementById('register-username').value,
+            password: registerPassword
+          }
+        })
+          .then(response => {
+            console.log(response)
+          })
+          .catch(error => {
+            console.log(error.response)
+            this.errorMessage = error.response.data.message.description
+          })
+      } else {
+        alert('Password does not match')
+      }
     }
   }
 }

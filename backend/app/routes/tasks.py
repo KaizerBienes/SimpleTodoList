@@ -140,20 +140,27 @@ def toggle_todo_done_flag(task_id, todo_id):
         }
     )
 
-@tasks.route('<task_id>/todos/<todo_id>/tags/<tag_name>/', methods=['PATCH'])
+@tasks.route('<task_id>/todos/<todo_id>/tags/<tag_name>/', methods=['PATCH', 'DELETE'])
 def modify_todo_tag(task_id, todo_id, tag_name):
-    post_content = request.json
     user_id = DecodeToken.get_user_id(request.headers)
     if user_id is not None:
         todo_tags_handler = TodoTagsHandler()
-        response_http_code = todo_handler.edit_specific_tag({
-            "user_id": user_id,
-            "task_id": task_id,
-            "todo_id": todo_id
-        }, todo_tags_handler, {
-            "old_tag": tag_name,
-            "new_tag": post_content.get("data").get("new_name")
-        })
+        if request.method == "DELETE":
+            response_http_code = todo_handler.delete_specific_tag({
+                "user_id": user_id,
+                "task_id": task_id,
+                "todo_id": todo_id
+            }, todo_tags_handler, tag_name)
+        elif request.method == "PATCH":
+            post_content = request.json
+            response_http_code = todo_handler.edit_specific_tag({
+                "user_id": user_id,
+                "task_id": task_id,
+                "todo_id": todo_id
+            }, todo_tags_handler, {
+                "old_tag": tag_name,
+                "new_tag": post_content.get("data").get("new_name")
+            })
     else:
         response_http_code = status.HTTP_403_FORBIDDEN
 

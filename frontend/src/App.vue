@@ -1,5 +1,7 @@
 <template>
   <div id="app">
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700" rel="stylesheet">
+    <link href="https://unpkg.com/ionicons@4.4.2/dist/css/ionicons.min.css" rel="stylesheet">
     <img src="./assets/logo.png">
     <router-view/>
   </div>

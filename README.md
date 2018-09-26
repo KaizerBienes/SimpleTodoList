@@ -2,6 +2,10 @@
 
 This is a simple todo list that was implemented with Flask and Vue.js.
 
+### Screenshots of the project
+https://imgur.com/a/ciEo8EH
+
+
 ### Project Milestones
 
 #### Basic requirements
